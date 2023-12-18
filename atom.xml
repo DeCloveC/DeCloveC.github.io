@@ -1,0 +1,603 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://DeCloveC.github.io</id>
+    <title>Gridea</title>
+    <updated>2023-12-18T11:42:55.466Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://DeCloveC.github.io"/>
+    <link rel="self" href="https://DeCloveC.github.io/atom.xml"/>
+    <subtitle>温故而知新</subtitle>
+    <logo>https://DeCloveC.github.io/images/avatar.png</logo>
+    <icon>https://DeCloveC.github.io/favicon.ico</icon>
+    <rights>All rights reserved 2023, Gridea</rights>
+    <entry>
+        <title type="html"><![CDATA[## **ProtoBuf在Linux下的安装以及应用(cpp,python)**]]></title>
+        <id>https://DeCloveC.github.io/post/protobuf-zai-linux-xia-de-an-zhuang-yi-ji-ying-yong-cpppython/</id>
+        <link href="https://DeCloveC.github.io/post/protobuf-zai-linux-xia-de-an-zhuang-yi-ji-ying-yong-cpppython/">
+        </link>
+        <updated>2023-12-18T11:42:19.000Z</updated>
+        <content type="html"><![CDATA[<p>下载ProtoBuf前⼀定要安装依赖库</p>
+<pre><code class="language-bash"> sudo apt-get install autoconf automake libtool curl make g++ unzip -y
+</code></pre>
+<pre><code class="language-bash">#下载命令
+wget https://github.com/protocolbuffers/protobuf/releases/download/v21.11/protobuf-all-21.11.zip
+
+unzipprotobuf-all-21.11.zip
+
+cd protobuf-21.11
+
+
+
+
+
+# 第⼀步执⾏autogen.sh，但如果下载的是具体的某⼀⻔语⾔，不需要执⾏这⼀步。
+./autogen.sh
+# 第⼆步执⾏configure，有两种执⾏⽅式，任选其⼀即可，我使用第二种如下：
+# 1、protobuf默认安装在 /usr/local ⽬录，lib、bin都是分散的
+./configure
+# 2、修改安装⽬录，统⼀安装在/usr/local/protobuf下
+./configure --prefix=/usr/local/protobuf
+
+
+
+
+
+make // 执⾏15分钟左右
+make check // 执⾏15分钟左右,选做，可以不执行该指令
+sudo make install
+
+
+
+
+
+sudo vim /etc/profile
+# 添加内容如下：
+#(动态库搜索路径) 程序加载运⾏期间查找动态链接库时指定除了系统默认路径之外的其他路径
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/protobuf/lib/
+#(静态库搜索路径) 程序编译期间查找动态链接库时指定查找共享库的路径
+export LIBRARY_PATH=$LIBRARY_PATH:/usr/local/protobuf/lib/
+#执⾏程序搜索路径
+export PATH=$PATH:/usr/local/protobuf/bin/
+#c程序头⽂件搜索路径
+export C_INCLUDE_PATH=$C_INCLUDE_PATH:/usr/local/protobuf/include/
+#c++程序头⽂件搜索路径
+export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/usr/local/protobuf/include/
+#pkg-config 路径
+export PKG_CONFIG_PATH=/usr/local/protobuf/lib/pkgconfig/
+
+
+
+
+source /etc/profile
+protoc --version
+
+
+
+
+
+</code></pre>
+<pre><code class="language-cpp">//测试cpp
+#include &lt;iostream&gt; 
+#include &quot;contacts.pb.h&quot;
+
+
+int main() { 
+    std::string people_str; 
+
+    {
+        // 对⼀个联系⼈的信息使⽤ PB 进⾏序列化，并将结果打印出来。
+        contacts::PeopleInfo people; 
+        people.set_name(&quot;张珊&quot;); 
+        people.set_age(20); 
+        if (!people.SerializeToString(&amp;people_str)) { 
+            std::cerr &lt;&lt; &quot;序列化联系⼈失败！&quot; &lt;&lt; std::endl; 
+            return -1;
+        }
+        std::cout &lt;&lt; &quot;序列化成功，结果：&quot; &lt;&lt; people_str &lt;&lt; std::endl; 
+    }
+
+    {
+        // 对序列化后的内容使⽤ PB 进⾏反序列，解析出联系⼈信息并打印出来。
+        contacts::PeopleInfo people; 
+        if (!people.ParseFromString(people_str)) { 
+            std::cerr &lt;&lt; &quot;反序列化联系⼈失败！&quot; &lt;&lt; std::endl; 
+            return -1;
+        } 
+        std::cout &lt;&lt; &quot;反序列化成功！&quot; &lt;&lt; std::endl
+                  &lt;&lt; &quot;姓名： &quot; &lt;&lt; people.name() &lt;&lt; std::endl
+                  &lt;&lt; &quot;年龄： &quot; &lt;&lt; people.age() &lt;&lt; std::endl;
+    }
+
+    return 0;
+} 
+
+
+
+</code></pre>
+<pre><code class="language-protobuf">// 首行：语法指定行
+syntax = &quot;proto3&quot;;
+package contacts;
+
+// 定义联系人message
+message PeopleInfo {
+  string name = 1;  // 姓名
+  int32 age = 2;    // 年龄  
+}
+
+
+//编译&amp;&amp;运行
+protoc --cpp_out=. contacts.proto
+g++ -o testPB test.cc contacts.pb.cc -lprotobuf -std=c++11
+./testPB
+</code></pre>
+<pre><code class="language-bash">#编译
+protoc --cpp_out=. addressbook.proto(根据自己定义的名字进行改变) // compile into current directory
+</code></pre>
+<pre><code class="language-bash">protoc ./TargetDetection.proto(根据自己定义的名字进行改变)  --python_out=./
+</code></pre>
+<p>如何在CMakeLists.txt中引入google protocol</p>
+<pre><code class="language-bash">cmake_minimum_required(VERSION 3.10)
+project(SealDemo VERSION 1.0)
+
+#这个是seal
+find_package(SEAL 4.0.0 EXACT REQUIRED)
+
+#如果下面能找到Protobuf就不需要,否则需要指明路径
+set(Protobuf_INCLUDE_DIR &quot;/usr/local/protobuf/include&quot;)
+set(Protobuf_LIBRARY &quot;/usr/local/protobuf/lib/libprotobuf.so&quot;) # 根据实际的库文件名修改
+set(Protobuf_PROTOC_LIBRARY &quot;/usr/local/protobuf/lib/libprotoc.so&quot;) # 根据实际的库文件名修改
+
+
+find_package(Protobuf REQUIRED)
+if (PROTOBUF_FOUND)
+    message(&quot;protobuf found&quot;)
+else ()
+    message(FATAL_ERROR &quot;Cannot find Protobuf&quot;)
+endif ()
+
+
+# 编译 proto 为 .cpp 和 .h
+file(GLOB NART_PROTOS *.proto)
+PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${NART_PROTOS})
+
+message(&quot;PROTO_SRCS = ${PROTO_SRCS}&quot;)
+message(&quot;PROTO_HDRS = ${PROTO_HDRS}&quot;)
+
+# 将PROTO_SRCS生成静态库nart_proto.a文件
+add_library(nart_proto STATIC ${PROTO_SRCS})
+
+target_include_directories(nart_proto
+        PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+        PUBLIC ${PROTOBUF_INCLUDE_DIRS})
+
+        
+#add_executable(cpp_server cpp_server.cpp ${PROTO_SRCS} ${PROTO_HDRS})
+
+add_executable(cpp_server cpp_server.cpp ${PROTO_SRCS} ${PROTO_HDRS})
+
+#如果不需要seal就不用加SEAL::seal
+target_link_libraries(cpp_server nart_proto SEAL::seal ${PROTOBUF_LIBRARY})
+# add_executable(cmake_protobuf cpp_server.cpp ${PROTO_SRCS} ${PROTO_HDRS})
+
+# target_link_libraries(cmake_protobuf nart_proto) 
+#target_link_libraries(cpp_server SEAL::seal)
+
+
+
+
+
+
+
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[论文分享(网络与系统安全 1031)]]></title>
+        <id>https://DeCloveC.github.io/post/lun-wen-fen-xiang-wang-luo-yu-xi-tong-an-quan-1031/</id>
+        <link href="https://DeCloveC.github.io/post/lun-wen-fen-xiang-wang-luo-yu-xi-tong-an-quan-1031/">
+        </link>
+        <updated>2023-10-30T08:17:45.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="attention-is-all-you-need">Attention is all you need</h2>
+<figure data-type="image" tabindex="1"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030103102595.png" alt="image-20231030103102595" loading="lazy"></figure>
+<p>我要讲的论文是Attention is all you need.这篇论文发表在NIPS(机器学习顶会中),这篇论文并非出自高校,而是出自google.</p>
+<h3 id="引入">引入</h3>
+<h4 id="rnn">RNN</h4>
+<p>先铺垫一些知识. 其次就是我会尽可能减少直接引入数学公式来讲解,除非特别强调的地方.从RNN入手.</p>
+<figure data-type="image" tabindex="2"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030103407346.png" alt="image-20231030103407346" loading="lazy"></figure>
+<p>RNN 重点就是时间序列,对于输入,比如x2,他不仅要关注x2本身,还要关注上个时间序列输出的s1.</p>
+<figure data-type="image" tabindex="3"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030103741114.png" alt="image-20231030103741114" loading="lazy"></figure>
+<p>两个RNN结合,seq2seq模型,先编码再解码就能完成翻译.不管输入多长,都会统一压缩为相同长度的C,导致翻译精度下降,  而Attention机制就是通过输入不同的C来解决,每个输入以不同的权重. 然后通过神经网络训练来得到最好的attention权重矩阵</p>
+<h4 id="attention">attention</h4>
+<figure data-type="image" tabindex="4"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030103645737.png" alt="image-20231030103645737" loading="lazy"></figure>
+<p>通过打破形成单一向量的模式,让模型可以看到全局信息,将注意力集中到对当前单词翻译最重要的信息上.</p>
+<h4 id="self-attention">self-attention</h4>
+<p>attention机制已经标明了权重参数.那么RNN的时间序列已经没什么用了,直接简化掉,于是便是self-attention.</p>
+<figure data-type="image" tabindex="5"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030103902617.png" alt="image-20231030103902617" loading="lazy"></figure>
+<p>具体来说,看这张表.input变为embedding后,经过可训练矩阵WQ,WK,WV之后,得到QKV矩阵,然后通过下面这个公式,来得到z矩阵,Z矩阵就是包含了输入信息以及相对应权重的矩阵.</p>
+<figure data-type="image" tabindex="6"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231025171111156.png" alt="image-20231025171111156" loading="lazy"></figure>
+<figure data-type="image" tabindex="7"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030113057986.png" alt="image-20231030113057986" loading="lazy"></figure>
+<h4 id="multi-head-attention">multi-head attention</h4>
+<p>再延申一下,multi-head attention 多头注意力机制,多个self-attention并行,使用不同初值的权重矩阵WQ,WK,WV,消除QKV矩阵的影响,最后加权平均合成一个Z.</p>
+<figure data-type="image" tabindex="8"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030105115385.png" alt="image-20231030105115385" loading="lazy"></figure>
+<p>在编码阶段,计算每个单词与所有单词之间的关联,</p>
+<figure data-type="image" tabindex="9"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030105150186.png" alt="image-20231030105150186" loading="lazy"></figure>
+<p>对于decoding时,不仅要看之前得到的输出,还要看encoder得到的输出.</p>
+<figure data-type="image" tabindex="10"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030105216098.png" alt="image-20231030105216098" loading="lazy"></figure>
+<p>更简单理解的例子,encoder就是拆解说明书,decoder就是不仅要看自己这部分的说明书,还要考虑在拆分时零件之间的关系</p>
+<h3 id="详解">详解</h3>
+<p>首先总体看一下结构,输入经过处理,然后经过6个encoder和decoder之后得到结果.</p>
+<figure data-type="image" tabindex="11"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030110213235.png" alt="image-20231030110213235" loading="lazy"></figure>
+<p>细致刨析encoder和decoder.</p>
+<figure data-type="image" tabindex="12"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030110317355.png" alt="image-20231030110317355" loading="lazy"></figure>
+<p>首先输入经过词嵌入的方式来转换为特征向量,加入positional encoding来标注位置信息.</p>
+<p>左边encoder,右边decoder.</p>
+<h4 id="encoder">encoder</h4>
+<figure data-type="image" tabindex="13"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030110246265.png" alt="image-20231030110246265" loading="lazy"></figure>
+<p>首先来看encoder,输入矩阵经过上述的多头注意力机制后,得到Z,然后经过前馈神经网络.</p>
+<p>前馈网络通常由两层全连接层组成，增加非线性、增强模型容量和深度以及处理和转换自注意力层输出的作用。</p>
+<p>add是残差连接,norm是正则化,前者增强网络对于差异关注的能力,后者则加快收敛速度</p>
+<h4 id="decoder">decoder</h4>
+<figure data-type="image" tabindex="14"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030110331620.png" alt="image-20231030110331620" loading="lazy"></figure>
+<p>decoder部分,首先输入是经过处理后的输入向量,方法大致相同,但是注意这里有两个注意力机制.<br>
+前者是多加了一个mask,用来掩码.具体作用如下,翻译时是按照顺序翻译的</p>
+<figure data-type="image" tabindex="15"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030110401297.png" alt="image-20231030110401297" loading="lazy"></figure>
+<p>第二个注意力机制,输入的时encoder的QK和本身的V,就是你在解码时,不仅要注意本身要解码的值,还要注意相互的关联.</p>
+<h4 id="输出">输出</h4>
+<p>最后经过一个线性层和一个softmax层,输出结果.</p>
+<figure data-type="image" tabindex="16"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030110417841.png" alt="image-20231030110417841" loading="lazy"></figure>
+<h2 id="homomorphic-encryption-for-arithmetic-of-approximate-numbers"><strong>Homomorphic Encryption for Arithmetic of Approximate Numbers</strong></h2>
+<figure data-type="image" tabindex="17"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030110433405.png" alt="image-20231030110433405" loading="lazy"></figure>
+<p>下面对于这篇论文的讲解,重点在于实现,其内容大致总结就是,不同于以往同态加密算法所追求的解密结果和明文完全一致,CKKS算法的目标是做近似计算,允许误差,放宽准确性的限制,细节有较大的简化,同时计算效率也有了很大的提升.</p>
+<figure data-type="image" tabindex="18"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030110500729.png" alt="image-20231030110500729" loading="lazy"></figure>
+<p>直接来看ckks的代码实现<br>
+首先就是就是一个概念,槽.槽的大小是这个参数除以2,这里就是4096.要对密文进行满槽处理,不然就会产生许多垃圾值.影响最终结果.</p>
+<p>最重要的就是这个点乘.<br>
+因为linear层采用的是点乘,而加密时选择线性层是一个很好的选择.<br>
+这就是一个点乘的加密,解密后取第一个值即为点乘之和.</p>
+<p>那么将上面简单的transformer和ckks同态加密结合起来呢?<br>
+将transformer的最后一个线性层进行加密,加密方式采用先对权重按块加密,因为每块的维度是512,所以要填满槽,然后再对输入进行加密,最后点乘解密. 可以看到两者的时间对比很明显,有巨大量级差距.  数据加密不仅考虑安全性,尤其是实地上,执行效率也是极其重要的一点.</p>
+<p>这里就不再进行延申了,再延申就是对于大模型的某些部分的加密,然后采用server client的方式来通信之类的.</p>
+<h2 id="efficient-homomorphic-comparison-methods-with-optimal-complexity"><strong>Efficient Homomorphic Comparison Methods with Optimal Complexity</strong></h2>
+<figure data-type="image" tabindex="19"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030111454258.png" alt="image-20231030111454258" loading="lazy"></figure>
+<p>下面一篇论文就是对于ckks同态加密的简单延申.</p>
+<p>论文的具体内容就是同态加密中只有加法和乘法,无法比较大小. 传统的方法时找到一个有最小次数的近似多项式.后面又有学者提出了更好的方法,引入了一个新的恒等式,但是还是不是最优</p>
+<figure data-type="image" tabindex="20"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030111655145.png" alt="image-20231030111655145" loading="lazy"></figure>
+<p>随后文章提出了一种基于复合多项式逼近的新的比较方法。通过分析复合多项式的性质，文章确定了使得复合多项式逼近接近于符号函数的核心属性。</p>
+<figure data-type="image" tabindex="21"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030111655145.png" alt="" loading="lazy"></figure>
+<p>最后通过将(A-B)输入,根据符号函数的值来判断输入输出.因为我目前也没有对于比较对加密状态的比较函数有需求,所以对于这篇论文也只是浅尝辄止,当作了解,和对同态加密更加深一些理解.</p>
+<h2 id="lora-low-rank-adaptation-of-large-language-models">Lora: Low-rank adaptation of large language models</h2>
+<figure data-type="image" tabindex="22"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030160351999.png" alt="image-20231030160351999" loading="lazy"></figure>
+<p>然后就是对于大模型的微调这篇论文,<strong>Lora: Low-rank adaptation of large language models</strong><br>
+大家这里直接将大模型当作transoformer来看就可以.</p>
+<p>首先大模型能够捕捉到丰富的特征和模式,但是通常是为了解决广泛的问题,而不是特定任务,那么就需要微调(fine tune)来训练出自己需要的特定模型来完成特定的任务.</p>
+<p>微调分为全参数微调和部分参数微调,也叫层次化微调. 全参数微调需要的算力太大,即使是清华的chatglm一代 6b的参数,全参数微调就需要8张A800.</p>
+<figure data-type="image" tabindex="23"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231030112456721.png" alt="image-20231030112456721" loading="lazy"></figure>
+<p>那么更大众也更轻量级的就是lora(LOW-RANK)微调. 低秩自适应矩阵. 他会先froze住预训练的模型权重,然后将可训练的秩分解矩阵注入Transformer架构的每一层(以chatglm为代表,实测是更换slef-attention中生成qkv矩阵的这个线性层),从而减少了下游任务的可训练参数数量.</p>
+<p>通过对大模型进行微调,保存lora的模型,然后在推理的时候,使用ckks同态加密,既可保证数据被正确送达,返回正确的值,同时你发送的信息也不会被窃取,完美符合可用不可见.</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[SEAL库学习]]></title>
+        <id>https://DeCloveC.github.io/post/seal-ku-xue-xi/</id>
+        <link href="https://DeCloveC.github.io/post/seal-ku-xue-xi/">
+        </link>
+        <updated>2023-10-24T12:40:24.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="噪声预算noise-budgetbfv">噪声预算”（noise budget）BFV</h2>
+<p>噪声预算”（noise budget）的概念，对于刚刚加密的密文来说，它的噪声预算由加密的参数所决定；同态操作会消耗掉这个噪声预算（注意预算是budget不是cost，所以不是从0开始加，可以理解为某种“资源余量”）。全同态加密有两种操作，加法和乘法（即：两个密文相加或相乘再解密，得到的结果与两个明文直接相加或相乘是相同的），其中加法基本不需要消耗预算，所以消耗的预算最主要取决于乘法，进行了多少次乘法运算，如果乘法运算进行的太多，噪声预算归零，密文就“坏了”，就解不开了，所以参数要足够大才行。</p>
+<figure data-type="image" tabindex="1"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231024191620707.png" alt="image-20231024191620707" loading="lazy"></figure>
+<h2 id="c-seal库的使用">C++ seal库的使用</h2>
+<pre><code class="language-sh">cd native/&lt;examples|tests|bench&gt; #进入有CmakeList.txt的目录
+cmake -S . -B build -DSEAL_ROOT=~/mylibs
+cmake --build build
+cmake --build build --config Release
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Cmake学习]]></title>
+        <id>https://DeCloveC.github.io/post/cmake-xue-xi/</id>
+        <link href="https://DeCloveC.github.io/post/cmake-xue-xi/">
+        </link>
+        <updated>2023-10-24T12:38:52.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="step-1构建最小项目">step 1：构建最小项目</h2>
+<pre><code class="language-cmake">cmake_minimum_required(VERSION 3.15)
+
+# set the project name
+project(Tutorial)
+
+# add the executable
+add_executable(Tutorial tutorial.cpp)
+</code></pre>
+<p><code>cmake_minimum_required</code> 指定使用 CMake 的最低版本号，<code>project</code> 指定项目名称，<code>add_executable</code> 用来生成可执行文件，需要指定生成可执行文件的名称和相关源文件。</p>
+<p>注意，此示例在 CMakeLists.txt 文件中使用小写命令。CMake 支持大写、小写和混合大小写命令。</p>
+<h3 id="构建-编译和运行">构建、编译和运行</h3>
+<p>先从命令行进入到 step1 目录，并创建一个构建目录 build，接下来，进入 build 目录并运行 CMake 来配置项目，并生成构建系统：</p>
+<pre><code class="language-sh">mkdir build
+cd build
+cmake -G&quot;MinGW Makefiles&quot; ..//也可以不加-G
+</code></pre>
+<p>构建系统是需要指定 CMakeLists.txt 所在路径，此时在 build 目录下，所以用 <code>..</code> 表示 CMakeLists.txt 在上一级目录。</p>
+<p>Windows 下，CMake 默认使用微软的 MSVC 作为编译器，我想使用 MinGW 编译器，可以通过 <code>-G</code> 参数来进行指定，只有第一次构建项目时需要指定。</p>
+<p>此时在 build 目录下会生成 Makefile 文件，然后调用编译器来实际编译和链接项目：</p>
+<pre><code class="language-text">cmake --build .
+</code></pre>
+<p><code>--build</code> 指定编译生成的文件存放目录，其中就包括可执行文件，<code>.</code> 表示存放到当前目录，</p>
+<p>在 build 目录下生成了一个 Tutorial.exe 可执行文件，试着执行它：</p>
+<pre><code class="language-text">&gt; Tutorial.exe 5
+The square root of 5 is 2.23607
+</code></pre>
+<p>我们也可以用一个变量来表示这多个源文件：</p>
+<pre><code class="language-cmake">set(SRC_LIST a.cpp b.cpp c.cpp)
+add_executable(${PROJECT_NAME} ${SRC_LIST})
+</code></pre>
+<pre><code class="language-cmake">SET(SRC_LIST tutorial.cpp)
+
+# add the executable
+add_executable(${PROJECT_NAME} ${SRC_LIST})
+</code></pre>
+<h3 id="添加版本号和配置头文件">添加版本号和配置头文件</h3>
+<p>我们可以在 CMakeLists.txt 为可执行文件和项目提供一个版本号。首先，修改 CMakeLists.txt 文件，使用 project 命令设置项目名称和版本号。</p>
+<pre><code class="language-cmake">cmake_minimum_required(VERSION 3.15)
+
+# set the project name and version
+project(Tutorial VERSION 1.0.2)
+
+configure_file(TutorialConfig.h.in TutorialConfig.h)
+</code></pre>
+<p>然后，配置头文件将版本号传递给源代码：</p>
+<pre><code class="language-cmake">configure_file(TutorialConfig.h.in TutorialConfig.h)
+</code></pre>
+<pre><code class="language-cmake">target_include_directories(${PROJECT_NAME} PUBLIC
+                           ${PROJECT_BINARY_DIR}
+                           )
+</code></pre>
+<p><code>PROJECT_BINARY_DIR</code> 表示当前工程的二进制路径，即编译产物会存放到该路径，此时<code>PROJECT_BINARY_DIR</code> 就是 build 所在路径。<br>
+参考链接:<br>
+https://github.com/microsoft/SEAL/blob/main/README.md#basic-cmake-options<br>
+https://zhuanlan.zhihu.com/p/500002865<br>
+https://cmake.org/cmake/help/latest/guide/tutorial/index.html<br>
+https://blog.csdn.net/weixin_45525272/article/details/122053959</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[docker]]></title>
+        <id>https://DeCloveC.github.io/post/docker/</id>
+        <link href="https://DeCloveC.github.io/post/docker/">
+        </link>
+        <updated>2023-10-16T09:26:17.000Z</updated>
+        <content type="html"><![CDATA[<p><strong>1.容器技术 vs 虚拟机</strong></p>
+<p>虚拟机</p>
+<figure data-type="image" tabindex="1"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231016113304258.png" alt="image-20231016113304258" loading="lazy"></figure>
+<p>容器</p>
+<figure data-type="image" tabindex="2"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231016113332449.png" alt="image-20231016113332449" loading="lazy"></figure>
+<figure data-type="image" tabindex="3"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231016113820301.png" alt="image-20231016113820301" loading="lazy"></figure>
+<p>新建一个容器的时候，docker 不需要像虚拟机一样重新加载一个操作系统内核，避免引导。虚拟机是加载 Guest OS，分钟级别的，而docker 是利用宿主机的操作系统，省略了这个复杂的过程，秒级！</p>
+<h2 id="2docker理解">2.docker理解</h2>
+<p>image理解为可执行程序，container就是运行起来的进程。在dockerfile中指定需要哪些程序、依赖什么样的配置，之后把dockerfile交给“编译器”docker进行“编译”，也就是docker build命令，生成的可执行程序就是image，之后就可以运行这个image了，这就是docker run命令，image运行起来后就是docker container。</p>
+<p>docker build</p>
+<figure data-type="image" tabindex="4"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231016113620988.png" alt="image-20231016113620988" loading="lazy"></figure>
+<p>docker pull</p>
+<figure data-type="image" tabindex="5"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231016113722084.png" alt="image-20231016113722084" loading="lazy"></figure>
+<pre><code class="language-sh"># 命令 docker  run -d 镜像名！
+[root@iZuf65oftugvcjgk2jncyeZ /]# docker run -d centos
+6628b8a4eb5562a96213da7e58444554ef0cbf94b717df526072d1cc888812cb
+[root@iZuf65oftugvcjgk2jncyeZ /]# docker ps
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+# 问题docker  ps，发现centos停止了
+# 常见的坑，docker 容器使用后台运行，就必须要有一个前台进程， docker 发现没有应用，就会自动停止
+# nginx，容器启动后，发现自己没有提供服务，就会立刻停止，就是没有程序了
+</code></pre>
+<pre><code class="language-sh"># 我们通常容器都是使用后台方式运行的，需要进入容器，修改一些配置
+# 命令
+docker exec -it 容器id bashShell
+# 测试
+[root@iZuf65oftugvcjgk2jncyeZ /]# docker exec -it b1177469c5ce /bin/bash
+# 方式二
+docker attach 容器id
+# 测试
+[root@iZuf65oftugvcjgk2jncyeZ /]# docker attach 596b80f933ac
+  
+# docker exec    #进入容器后开启一个新的终端，可以在里面操作（常用）
+# docker attach  #进入容器正在执行的终端，不会启动新的进程！
+</code></pre>
+<pre><code class="language-sh">docker run 镜像id 新建容器并启动
+docker ps 列出所有运行的容器 docker container list
+docker rm 容器id 删除指定容器
+docker start 容器id #启动容器
+docker restart容器id #重启容器
+docker stop 容器id #停止当前正在运行的容器
+docker kill 容器id #强制停止当前容器
+</code></pre>
+<figure data-type="image" tabindex="6"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231016122722268.png" alt="image-20231016122722268" loading="lazy"></figure>
+<pre><code class="language-text">#我们通过-d进行后台启动  --name 给我们的容器重新命名  -P 我们容器对外暴露的端口号+
+</code></pre>
+<figure data-type="image" tabindex="7"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231016123249063.png" alt="image-20231016123249063" loading="lazy"></figure>
+<p>端口暴露</p>
+<figure data-type="image" tabindex="8"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231016123514863.png" alt="image-20231016123514863" loading="lazy"></figure>
+<p>服务器端口映射到本地, 通过本地访问</p>
+<pre><code class="language-sh">ssh -N -f -L localhost:xx:localhost:xx -p 端口 xx@xx (前端为本地端口,后面为服务器端口)
+</code></pre>
+<p>改动nginx配置文件，都需要进入容器内部？十分的麻烦，我要是可以在容器外部提供一个映射路径，达到在容器修改文件名，容器内部就可以自动修改？ -v 数据卷！</p>
+<h2 id="3docker可视化portainer">3.Docker可视化(portainer)</h2>
+<figure data-type="image" tabindex="9"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231016145547419.png" alt="image-20231016145547419" loading="lazy"></figure>
+<p><strong>attention:</strong></p>
+<p>Docker镜像都是只读的，当容器启动时，一个新的可写层被加载到镜像的顶部！</p>
+<p>这一层就是我们通常说的容器层，容器之下的都叫镜像层。</p>
+<p>我们原本的tomcat只是一个镜像，如果我们在tomcat上执行一些操作的话，我们就会在本来tomcat上新增一层，我们执行的所有的操作都在这里，此时我们将我们的tomcat底层镜像和我们对它的一些操作，依然可以打包成一个大的新的镜像。</p>
+<h2 id="4commit镜像">4.commit镜像</h2>
+<pre><code class="language-sh">docker commit 提交容器成为一个新的副本
+# 命令和git原理类似
+docker commit -m=&quot;描述信息&quot; -a=&quot;作者&quot; 容器id 目标镜像名:[TAG]
+</code></pre>
+<figure data-type="image" tabindex="10"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231016152150037.png" alt="image-20231016152150037" loading="lazy"></figure>
+<h2 id="5-容器数据卷">5、容器数据卷</h2>
+<h3 id="什么是容器卷">什么是容器卷？</h3>
+<p>docker的理念回顾</p>
+<p>将应用和环境打包成一个镜像！</p>
+<p>数据？如果数据都在容器中，那么我们容器删除，数据就会丢失！·需求：<code>数据可以持久化</code></p>
+<p>MySQL，容器删除了，删库跑路！需求：<code>MySQL数据可以存储在本地</code>！</p>
+<p>容器之间可以有一个数据共享的技术！Docker容器中产生的数据，同步到本地！</p>
+<p>这就是卷技术！目录的挂载，将我们容器内的目录，挂载到Linux上面！</p>
+<p>即:容器的持久化和同步操作！容器间也是可以数据共享的！</p>
+<pre><code class="language-sh">-v, --volume list Bind mount a volume
+docker run -it -v 主机目录:容器内目录 
+
+#测试案例
+[root@iZuf65oftugvcjgk2jncyeZ ~]# docker run -it -v /home/centosTest:/home centos /bin/bash  (前面为主机路径 后面为docker路径 用于将主机的 /home/centosTest 目录挂载到容器内部的 /home 目录)
+docker inspect 容器ID
+
+</code></pre>
+<p><strong>1、停止容器</strong> <strong>2、宿主机修改文件</strong> <strong>3、启动容器</strong> <strong>4、容器内的数据依旧是同步的****5.数据的同步是双向的</strong></p>
+<figure data-type="image" tabindex="11"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231016160136452.png" alt="image-20231016160136452" loading="lazy"></figure>
+<p><strong>tips</strong>:</p>
+<p>总结起来，匿名挂载适用于临时的数据共享，无需为挂载点指定名称；而具名挂载适用于需要在多个容器之间共享和管理的卷，可以为挂载点指定有意义的名称。具名挂载提供了更好的可读性和可维护性，适合长期使用和管理数据卷。</p>
+<h3 id="6数据卷容器">6.数据卷容器</h3>
+<p>多个MySQL同步数据！</p>
+<p>命名的容器挂载数据卷！</p>
+<figure data-type="image" tabindex="12"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231016164454356.png" alt="image-20231016164454356" loading="lazy"></figure>
+<h2 id="7dockerfile介绍">7.DockerFile介绍</h2>
+<figure data-type="image" tabindex="13"><img src="https://cdn.jsdelivr.net/gh/DeCloveC/blogImage@main/image-20231016165122829.png" alt="image-20231016165122829" loading="lazy"></figure>
+<p>编写dokerfile，官方命令为<code>Dockerfile</code>,在我们build的时候会自动寻找这个文件，就不需要-f指定指定的dockerfile文件路径！</p>
+<pre><code class="language-sh"># 会发现push不上去，因为如果没有前缀的话默认是push到 官方的library
+# 解决方法
+# 第一种 build的时候添加你的dockerhub用户名，然后在push就可以放到自己的仓库了
+$ docker build -t chengcoder/mytomcat:0.1 .
+# 第二种 使用docker tag #然后再次push
+$ docker tag 容器id chengcoder/mytomcat:1.0 
+#然后再次push
+$ docker push kuangshen/tomcat:1.0
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[git上传]]></title>
+        <id>https://DeCloveC.github.io/post/git-shang-chuan/</id>
+        <link href="https://DeCloveC.github.io/post/git-shang-chuan/">
+        </link>
+        <updated>2023-10-15T12:03:12.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="linux上传git代码">linux上传git代码</h2>
+<pre><code class="language-sh">git init
+
+git add 文件名
+
+git commit -m &quot;备注&quot;  (-m &quot;备注&quot;可有可无)
+
+git remote add origin git@xxx.git
+
+git push -u origin master
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Python网络编程]]></title>
+        <id>https://DeCloveC.github.io/post/wang-luo-bian-cheng/</id>
+        <link href="https://DeCloveC.github.io/post/wang-luo-bian-cheng/">
+        </link>
+        <updated>2023-10-12T13:21:22.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="无法直接传输数字">无法直接传输数字</h2>
+<p>可以将数字用utf-8 encode后,传输在server端进行解密<br>
+<img src="https://DeCloveC.github.io/post-images/1697352335820.png" alt="" loading="lazy"><br>
+<img src="https://DeCloveC.github.io/post-images/1697352365912.png" alt="" loading="lazy"><br>
+或者使用数字流的方法</p>
+<p><img src="https://DeCloveC.github.io/post-images/1697352375446.png" alt="" loading="lazy"><br>
+<img src="https://DeCloveC.github.io/post-images/1697352379715.png" alt="" loading="lazy"></p>
+<pre><code class="language-python">#server
+import socket
+sock = socket(socket.AF_INET,socket.SOCK_STREAM)
+sock.bind((ip,port))
+sock.listen(5)
+
+ss,addr=sock.accept()
+
+ss.send(data)
+ss.close
+</code></pre>
+<pre><code class="language-python">#client
+cs=socket()
+cs.connect((ip,port))
+cs.recv(1024)
+cs.close
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[lora学习]]></title>
+        <id>https://DeCloveC.github.io/post/lora-xue-xi/</id>
+        <link href="https://DeCloveC.github.io/post/lora-xue-xi/">
+        </link>
+        <updated>2023-10-12T09:02:22.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="左边冻结的地方对照">左边冻结的地方对照</h3>
+<figure data-type="image" tabindex="1"><img src="https://DeCloveC.github.io/post-images/1697101374880.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="2"><img src="https://DeCloveC.github.io/post-images/1697101380072.png" alt="" loading="lazy"></figure>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[深度学习入门:使用单层向量机实现逻辑与(未解决)]]></title>
+        <id>https://DeCloveC.github.io/post/shen-du-xue-xi-ru-men-shi-yong-dan-ceng-xiang-liang-ji-shi-xian-luo-ji-yu-wei-jie-jue/</id>
+        <link href="https://DeCloveC.github.io/post/shen-du-xue-xi-ru-men-shi-yong-dan-ceng-xiang-liang-ji-shi-xian-luo-ji-yu-wei-jie-jue/">
+        </link>
+        <updated>2023-10-12T02:53:46.000Z</updated>
+        <content type="html"><![CDATA[<figure data-type="image" tabindex="1"><img src="https://DeCloveC.github.io/post-images/1697079412228.png" alt="" loading="lazy"></figure>
+<pre><code class="language-python">import numpy as np
+import matplotlib.pyplot as plt
+
+# 输入
+x = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+
+# 输出
+d = np.array([0, 0, 0, 1])
+w = np.array([0.038, 0.044])
+
+# 学习率
+a = 0.015
+b = 0.006
+
+# 阈值c
+c = 0.042
+
+def f(x):
+    return 1 if x &gt;= 0 else 0
+
+while True:
+    num_errors = 0
+    for i in range(len(x)):
+        s = np.sum(x[i] * w) - c
+        e = d[i] - f(s)
+        w = w + a * e * x[i]
+        c -=b * e
+        if e != 0:
+            num_errors += 1
+
+    if num_errors == 0:
+        x_values = x[:, 0]
+        y_values = x[:, 1]
+        for i in range(len(d)):
+            if d[i] == 0:
+                plt.scatter(x_values[i], y_values[i], c='red')
+            else:
+                plt.scatter(x_values[i], y_values[i], c='blue')
+        x_x=np.array([0, 1])
+        y=-(w[0]*x_x+c)/w[1]
+        plt.plot(x_x, y)
+        print(w)
+        print(c)
+
+        break
+
+plt.show()
+</code></pre>
+<figure data-type="image" tabindex="2"><img src="https://DeCloveC.github.io/post-images/1697079421280.png" alt="" loading="lazy"></figure>
+<p>问题:线不对</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[测试文章]]></title>
+        <id>https://DeCloveC.github.io/post/ce-shi-wen-zhang/</id>
+        <link href="https://DeCloveC.github.io/post/ce-shi-wen-zhang/">
+        </link>
+        <updated>2023-10-11T12:29:38.000Z</updated>
+        <content type="html"><![CDATA[<p>test</p>
+]]></content>
+    </entry>
+</feed>
